@@ -1,0 +1,100 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 225 15% 10%;
+  --foreground: 0 0% 90%;
+  --card: 225 20% 12%;
+  --card-foreground: 0 0% 90%;
+  --popover: 225 20% 12%;
+  --popover-foreground: 0 0% 90%;
+  --primary: 220 70% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 225 20% 18%;
+  --secondary-foreground: 0 0% 90%;
+  --muted: 225 15% 20%;
+  --muted-foreground: 220 10% 60%;
+  --accent: 220 70% 45%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 225 15% 20%;
+  --input: 225 15% 20%;
+  --ring: 220 70% 45%;
+  --radius: 0.5rem;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: 'DM Sans', sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
+
+/* Game card styles */
+.game-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 40px rgba(40, 71, 160, 0.3);
+}
+
+.game-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(
+    135deg,
+    transparent 30%,
+    rgba(40, 100, 200, 0.6) 30%,
+    rgba(40, 100, 200, 0.6) 100%
+  );
+  pointer-events: none;
+}
+
+.game-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(23, 23, 32, 0.8) 100%);
+}
