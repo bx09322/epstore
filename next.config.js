@@ -1,14 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Configuración para GitHub Pages
-  output: 'export',
+  // NO pongas output: 'export' para Vercel
   
-  // Como tu repo es EPSTORE.github.io (repo de usuario), NO necesitas basePath
-  
-  // Evitar problemas con rutas en GitHub Pages
-  trailingSlash: true,
-  
-  // Configuración existente
   allowedDevOrigins: ["*.preview.same-app.com"],
   images: {
     unoptimized: true,
