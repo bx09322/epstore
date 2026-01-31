@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -26,6 +28,8 @@ export default function RootLayout({
         className={`${dmSans.variable} font-sans antialiased bg-[#0a0a0f]`}
       >
         <Providers>{children}</Providers>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
