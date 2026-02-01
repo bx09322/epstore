@@ -1,72 +1,75 @@
+require('dotenv').config();
+
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
-// Crear base de datos SQLite
-const db = new sqlite3.Database('./users.db', (err) => {
-  if (err) {
-    console.error('Error al abrir la base de datos:', err);
-  } else {
-    console.log('Base de datos SQLite conectada');
-    initDatabase();
+// Configuración PostgreSQL
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
   }
 });
 
 // Inicializar base de datos
-function initDatabase() {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      is_admin INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `, (err) => {
-    if (err) {
-      console.error('Error al crear tabla:', err);
-    } else {
-      console.log('Tabla users creada o ya existe');
-      createDefaultAdmin();
-    }
-  });
+async function initDatabase() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        is_admin INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Tabla users creada o ya existe');
+    await createDefaultAdmin();
+  } catch (err) {
+    console.error('❌ Error al crear tabla:', err);
+  }
 }
 
 // Crear admin por defecto
-function createDefaultAdmin() {
+async function createDefaultAdmin() {
   const adminUsername = 'admin';
   const adminPassword = 'admin123';
   const adminEmail = 'admin@safemarket.com';
 
-  db.get('SELECT * FROM users WHERE username = ?', [adminUsername], async (err, row) => {
-    if (err) {
-      console.error('Error al verificar admin:', err);
-    } else if (!row) {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM users WHERE username = $1',
+      [adminUsername]
+    );
+
+    if (result.rows.length === 0) {
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
-      db.run(
-        'INSERT INTO users (username, email, password, is_admin) VALUES (?, ?, ?, 1)',
-        [adminUsername, adminEmail, hashedPassword],
-        (err) => {
-          if (err) {
-            console.error('Error al crear admin:', err);
-          } else {
-            console.log('Usuario admin creado: username=admin, password=admin123');
-          }
-        }
+      await pool.query(
+        'INSERT INTO users (username, email, password, is_admin) VALUES ($1, $2, $3, 1)',
+        [adminUsername, adminEmail, hashedPassword]
       );
+      console.log('✅ Usuario admin creado: username=admin, password=admin123');
     }
-  });
+  } catch (err) {
+    console.error('❌ Error al verificar/crear admin:', err);
+  }
 }
+
+// Inicializar al arrancar
+initDatabase();
+
+// ==================== RUTAS ====================
 
 // Ruta de registro
 app.post('/api/register', async (req, res) => {
@@ -83,45 +86,43 @@ app.post('/api/register', async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    db.run(
-      'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-      [username, email, hashedPassword],
-      function(err) {
-        if (err) {
-          if (err.message.includes('UNIQUE')) {
-            return res.status(400).json({ message: 'El usuario o email ya existe' });
-          }
-          return res.status(500).json({ message: 'Error al registrar usuario' });
-        }
-
-        res.status(201).json({
-          message: 'Usuario registrado exitosamente',
-          userId: this.lastID
-        });
-      }
+    const result = await pool.query(
+      'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id',
+      [username, email, hashedPassword]
     );
+
+    res.status(201).json({
+      message: 'Usuario registrado exitosamente',
+      userId: result.rows[0].id
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error del servidor' });
+    if (error.code === '23505') {
+      return res.status(400).json({ message: 'El usuario o email ya existe' });
+    }
+    console.error(error);
+    res.status(500).json({ message: 'Error al registrar usuario' });
   }
 });
 
 // Ruta de login
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
     return res.status(400).json({ message: 'Usuario y contraseña son requeridos' });
   }
 
-  db.get('SELECT * FROM users WHERE username = ?', [username], async (err, user) => {
-    if (err) {
-      return res.status(500).json({ message: 'Error del servidor' });
-    }
+  try {
+    const result = await pool.query(
+      'SELECT * FROM users WHERE username = $1',
+      [username]
+    );
 
-    if (!user) {
+    if (result.rows.length === 0) {
       return res.status(401).json({ message: 'Usuario o contraseña incorrectos' });
     }
 
+    const user = result.rows[0];
     const validPassword = await bcrypt.compare(password, user.password);
 
     if (!validPassword) {
@@ -137,42 +138,51 @@ app.post('/api/login', (req, res) => {
         isAdmin: user.is_admin === 1
       }
     });
-  });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error del servidor' });
+  }
 });
 
-// Ruta para obtener todos los usuarios (solo admin)
-app.get('/api/users', (req, res) => {
-  db.all('SELECT id, username, email, is_admin, created_at FROM users', [], (err, users) => {
-    if (err) {
-      return res.status(500).json({ message: 'Error al obtener usuarios' });
-    }
-    res.json(users);
-  });
+// Ruta para obtener todos los usuarios
+app.get('/api/users', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, username, email, is_admin, created_at FROM users ORDER BY id'
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al obtener usuarios' });
+  }
 });
 
-// Ruta para eliminar usuario (solo admin, no puede eliminarse a sí mismo)
-app.delete('/api/users/:id', (req, res) => {
+// Ruta para eliminar usuario
+app.delete('/api/users/:id', async (req, res) => {
   const { id } = req.params;
 
-  // Verificar que no sea el usuario con ID 1 (admin principal)
   if (id === '1') {
     return res.status(400).json({ message: 'No se puede eliminar el administrador principal' });
   }
 
-  db.run('DELETE FROM users WHERE id = ?', [id], function(err) {
-    if (err) {
-      return res.status(500).json({ message: 'Error al eliminar usuario' });
-    }
+  try {
+    const result = await pool.query(
+      'DELETE FROM users WHERE id = $1',
+      [id]
+    );
 
-    if (this.changes === 0) {
-      return res.status(400).json({ message: 'Usuario no encontrado' });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
     res.json({ message: 'Usuario eliminado exitosamente' });
-  });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al eliminar usuario' });
+  }
 });
 
-// Ruta para actualizar usuario (solo admin)
+// Ruta para actualizar usuario
 app.put('/api/users/:id', async (req, res) => {
   const { id } = req.params;
   const { username, email, password, is_admin } = req.body;
@@ -180,30 +190,21 @@ app.put('/api/users/:id', async (req, res) => {
   try {
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
-      db.run(
-        'UPDATE users SET username = ?, email = ?, password = ?, is_admin = ? WHERE id = ?',
-        [username, email, hashedPassword, is_admin ? 1 : 0, id],
-        function(err) {
-          if (err) {
-            return res.status(500).json({ message: 'Error al actualizar usuario' });
-          }
-          res.json({ message: 'Usuario actualizado exitosamente' });
-        }
+      await pool.query(
+        'UPDATE users SET username = $1, email = $2, password = $3, is_admin = $4 WHERE id = $5',
+        [username, email, hashedPassword, is_admin ? 1 : 0, id]
       );
     } else {
-      db.run(
-        'UPDATE users SET username = ?, email = ?, is_admin = ? WHERE id = ?',
-        [username, email, is_admin ? 1 : 0, id],
-        function(err) {
-          if (err) {
-            return res.status(500).json({ message: 'Error al actualizar usuario' });
-          }
-          res.json({ message: 'Usuario actualizado exitosamente' });
-        }
+      await pool.query(
+        'UPDATE users SET username = $1, email = $2, is_admin = $3 WHERE id = $4',
+        [username, email, is_admin ? 1 : 0, id]
       );
     }
+
+    res.json({ message: 'Usuario actualizado exitosamente' });
   } catch (error) {
-    res.status(500).json({ message: 'Error del servidor' });
+    console.error(error);
+    res.status(500).json({ message: 'Error al actualizar usuario' });
   }
 });
 
@@ -222,30 +223,32 @@ app.post('/api/users', async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    db.run(
-      'INSERT INTO users (username, email, password, is_admin) VALUES (?, ?, ?, ?)',
-      [username, email, hashedPassword, is_admin ? 1 : 0],
-      function(err) {
-        if (err) {
-          if (err.message.includes('UNIQUE')) {
-            return res.status(400).json({ message: 'El usuario o email ya existe' });
-          }
-          return res.status(500).json({ message: 'Error al crear usuario' });
-        }
-
-        res.status(201).json({
-          message: 'Usuario creado exitosamente',
-          userId: this.lastID
-        });
-      }
+    const result = await pool.query(
+      'INSERT INTO users (username, email, password, is_admin) VALUES ($1, $2, $3, $4) RETURNING id',
+      [username, email, hashedPassword, is_admin ? 1 : 0]
     );
+
+    res.status(201).json({
+      message: 'Usuario creado exitosamente',
+      userId: result.rows[0].id
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error del servidor' });
+    if (error.code === '23505') {
+      return res.status(400).json({ message: 'El usuario o email ya existe' });
+    }
+    console.error(error);
+    res.status(500).json({ message: 'Error al crear usuario' });
   }
 });
 
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Iniciar servidor
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
 });
 
 module.exports = app;
