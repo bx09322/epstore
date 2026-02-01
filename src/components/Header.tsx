@@ -3,11 +3,36 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, ShoppingCart, User, Menu, X, LogOut } from "lucide-react";
-import { signIn, signOut, useSession } from "next-auth/react";
+import FloatingLogin from "./FloatingLogin";
+import dynamic from 'next/dynamic';
+
+// Importar AdminPanel dinámicamente para evitar problemas de SSR
+const AdminPanel = dynamic(() => import('./AdminPanel'), { ssr: false });
+
+interface UserData {
+  id: number;
+  username: string;
+  email: string;
+  isAdmin: boolean;
+}
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { data: session } = useSession();
+  const [showLogin, setShowLogin] = useState(false);
+  const [user, setUser] = useState<UserData | null>(null);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+
+  // Cargar usuario desde localStorage
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error('Error al cargar usuario:', e);
+      }
+    }
+  }, []);
 
   // Prevenir scroll cuando el menú está abierto
   useEffect(() => {
@@ -20,6 +45,22 @@ export default function Header() {
       document.body.style.overflow = 'unset';
     };
   }, [mobileMenuOpen]);
+
+  const handleLoginSuccess = (loggedUser: UserData) => {
+    setUser(loggedUser);
+    localStorage.setItem('user', JSON.stringify(loggedUser));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('user');
+    setShowAdminPanel(false);
+  };
+
+  const handleLoginClick = () => {
+    setShowLogin(true);
+    setMobileMenuOpen(false);
+  };
 
   return (
     <>
@@ -71,17 +112,34 @@ export default function Header() {
                   <Search className="w-6 h-6" />
                 </button>
 
-                {session ? (
-                  <button
-                    onClick={() => signOut()}
-                    className="hidden md:flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors"
-                  >
-                    <LogOut className="w-5 h-5" />
-                    Salir
-                  </button>
+                {user ? (
+                  <div className="hidden md:flex items-center gap-3">
+                    <div className="flex items-center gap-2 text-white">
+                      <User className="w-5 h-5 text-blue-400" />
+                      <span className="text-sm font-medium">{user.username}</span>
+                      {user.isAdmin && (
+                        <>
+                          <span className="text-yellow-400 text-xs">👑 Admin</span>
+                          <button
+                            onClick={() => setShowAdminPanel(!showAdminPanel)}
+                            className="text-xs bg-blue-500/20 hover:bg-blue-500/30 px-2 py-1 rounded transition-colors"
+                          >
+                            Panel
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      Salir
+                    </button>
+                  </div>
                 ) : (
                   <button
-                    onClick={() => signIn()}
+                    onClick={handleLoginClick}
                     className="hidden md:flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
                   >
                     <User className="w-5 h-5" />
@@ -109,13 +167,11 @@ export default function Header() {
           ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}
         `}
       >
-        {/* Backdrop oscuro */}
         <div 
           className="absolute inset-0 bg-black/80 backdrop-blur-sm"
           onClick={() => setMobileMenuOpen(false)}
         />
         
-        {/* Panel del menú */}
         <div
           className={`
             absolute right-0 top-0 h-full w-[280px] bg-[#0a0a0f] border-l border-white/10
@@ -124,10 +180,8 @@ export default function Header() {
           `}
         >
           <div className="flex flex-col h-full p-6">
-            {/* Espaciado superior */}
             <div className="h-20" />
 
-            {/* Links del menú */}
             <nav className="flex-1 space-y-2">
               <Link
                 href="/"
@@ -164,27 +218,40 @@ export default function Header() {
               >
                 About
               </Link>
+
+              {user?.isAdmin && (
+                <button
+                  onClick={() => {
+                    setShowAdminPanel(!showAdminPanel);
+                    setMobileMenuOpen(false);
+                  }}
+                  className="block w-full text-left text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10 py-3 px-4 rounded-lg transition-all"
+                >
+                  👑 Panel Admin
+                </button>
+              )}
             </nav>
 
-            {/* Botón de login/logout al fondo */}
             <div className="pt-6 border-t border-white/10">
-              {session ? (
-                <button
-                  onClick={() => {
-                    signOut();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="flex items-center gap-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 py-3 px-4 rounded-lg transition-all w-full"
-                >
-                  <LogOut className="w-5 h-5" />
-                  <span>Salir</span>
-                </button>
+              {user ? (
+                <div className="space-y-3">
+                  <div className="text-sm text-gray-400 px-4">
+                    Conectado como: <span className="text-white font-medium">{user.username}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 py-3 px-4 rounded-lg transition-all w-full"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span>Salir</span>
+                  </button>
+                </div>
               ) : (
                 <button
-                  onClick={() => {
-                    signIn();
-                    setMobileMenuOpen(false);
-                  }}
+                  onClick={handleLoginClick}
                   className="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-white/5 py-3 px-4 rounded-lg transition-all w-full"
                 >
                   <User className="w-5 h-5" />
@@ -195,6 +262,32 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      {/* Login Flotante */}
+      {showLogin && (
+        <FloatingLogin
+          onClose={() => setShowLogin(false)}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      )}
+
+      {/* Panel de Administración */}
+      {showAdminPanel && user?.isAdmin && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-y-auto">
+          <div className="min-h-screen p-4">
+            <div className="max-w-7xl mx-auto">
+              <button
+                onClick={() => setShowAdminPanel(false)}
+                className="mb-4 flex items-center gap-2 text-white hover:text-blue-400 transition-colors"
+              >
+                <X className="w-5 h-5" />
+                Cerrar Panel
+              </button>
+              <AdminPanel />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
