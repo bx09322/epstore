@@ -8,6 +8,9 @@ interface FloatingLoginProps {
   onLoginSuccess: (user: any) => void;
 }
 
+// Configuración de la API - usa la variable de entorno o el backend de Render
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://epstore.onrender.com';
+
 const FloatingLogin: React.FC<FloatingLoginProps> = ({ onClose, onLoginSuccess }) => {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
@@ -23,7 +26,7 @@ const FloatingLogin: React.FC<FloatingLoginProps> = ({ onClose, onLoginSuccess }
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/login', {
+      const response = await fetch(`${API_URL}/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,7 +58,7 @@ const FloatingLogin: React.FC<FloatingLoginProps> = ({ onClose, onLoginSuccess }
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/register', {
+      const response = await fetch(`${API_URL}/api/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
