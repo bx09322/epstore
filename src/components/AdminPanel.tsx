@@ -11,6 +11,9 @@ interface User {
   created_at: string;
 }
 
+// Configuración de la API - usa la variable de entorno o el backend de Render
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://epstore.onrender.com';
+
 const AdminPanel: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +32,7 @@ const AdminPanel: React.FC = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/users');
+      const response = await fetch(`${API_URL}/api/users`);
       const data = await response.json();
       setUsers(data);
       setLoading(false);
@@ -50,7 +53,7 @@ const AdminPanel: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/users/${id}`, {
+      const response = await fetch(`${API_URL}/api/users/${id}`, {
         method: 'DELETE',
       });
 
@@ -82,7 +85,7 @@ const AdminPanel: React.FC = () => {
     if (!editingUser) return;
 
     try {
-      const response = await fetch(`http://localhost:3001/api/users/${editingUser.id}`, {
+      const response = await fetch(`${API_URL}/api/users/${editingUser.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -113,7 +116,7 @@ const AdminPanel: React.FC = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/users', {
+      const response = await fetch(`${API_URL}/api/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -149,7 +152,7 @@ const AdminPanel: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/users/${user.id}`, {
+      const response = await fetch(`${API_URL}/api/users/${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
