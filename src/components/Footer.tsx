@@ -14,11 +14,11 @@ export default function Footer() {
           {/* About */}
           <div>
             <div className="flex items-center gap-1 mb-4">
-              <span className="text-xl font-bold text-blue-500">Safe</span>
+              <span className="text-xl font-bold text-blue-500">EPS</span>
               <span className="text-xl font-bold text-white">Market</span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Safe Market is a reseller of premium software solutions for gaming lovers.
+              Eps Market is a reseller of premium software solutions for gaming lovers.
               Focusing on PC Games, we offer premium products with great support and service.
             </p>
           </div>
@@ -38,11 +38,11 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="mailto:info@safemarket.vip"
+                  href="mailto:info@epsmarket.vip"
                   className="text-gray-400 hover:text-white transition-colors flex items-center gap-2 text-sm"
                 >
                   <Mail className="w-4 h-4" />
-                  info@safemarket.vip
+                  info@epsmarket.vip
                 </Link>
               </li>
             </ul>
@@ -156,7 +156,7 @@ export default function Footer() {
       <div className="border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <p className="text-gray-500 text-sm text-center md:text-left">
-            © Copyright 2021 – 2025 | safemarket.vip
+            © Copyright 2021 – 2025 | epsmarket.vercel.app
           </p>
         </div>
       </div>

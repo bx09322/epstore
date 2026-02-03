@@ -25,9 +25,9 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* About */}
           <div>
-            <h4 className="text-white text-lg font-semibold mb-4">Safe Market</h4>
+            <h4 className="text-white text-lg font-semibold mb-4">EPS Market</h4>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Safe Market is a reseller of premium software solutions for gaming lovers.
+              eps Market is a reseller of premium software solutions for gaming lovers.
               Focusing on computer games, we offer premium products with great support and service.
             </p>
           </div>
@@ -47,11 +47,11 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="mailto:info@safemarket.vip"
+                  href="mailto:info@epsmarket.vip"
                   className="flex items-center text-gray-400 hover:text-blue-400 transition-colors text-sm"
                 >
                   <Mail className="h-4 w-4 mr-2" />
-                  info@safemarket.vip
+                  info@epsmarket.vip
                 </Link>
               </li>
             </ul>
@@ -99,7 +99,7 @@ export function Footer() {
       <div className="border-t border-white/5 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-gray-500 text-sm text-center">
-            © Copyright 2021 – 2025 | safemarket.vip | All Rights Reserved.
+            © Copyright 2021 – 2025 | epsmarket.vip | All Rights Reserved.
           </p>
         </div>
       </div>

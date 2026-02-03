@@ -1,9 +1,11 @@
 "use client";
 
+import { useCart } from '@/context/CartContext';
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, ShoppingCart, User, Menu, X, LogOut } from "lucide-react";
 import FloatingLogin from "./FloatingLogin";
+import CartSidebar from './CartSidebar';
 import dynamic from 'next/dynamic';
 
 // Importar AdminPanel dinámicamente para evitar problemas de SSR
@@ -21,6 +23,9 @@ export default function Header() {
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  
+  const { getCartCount } = useCart();
 
   // Cargar usuario desde localStorage
   useEffect(() => {
@@ -78,7 +83,7 @@ export default function Header() {
           <div className="max-w-7xl mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <Link href="/" className="flex items-center gap-1 z-10">
-                <span className="text-2xl font-bold text-blue-500">Safe</span>
+                <span className="text-2xl font-bold text-blue-500">EPS</span>
                 <span className="text-2xl font-bold text-white">Market</span>
               </Link>
 
@@ -101,11 +106,17 @@ export default function Header() {
               </div>
 
               <div className="flex items-center gap-4 z-10">
-                <button className="relative p-2 text-gray-300 hover:text-white transition-colors">
+                {/* BOTÓN DEL CARRITO ACTUALIZADO */}
+                <button 
+                  onClick={() => setCartOpen(true)}
+                  className="relative p-2 text-gray-300 hover:text-white transition-colors"
+                >
                   <ShoppingCart className="w-6 h-6" />
-                  <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                    0
-                  </span>
+                  {getCartCount() > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                      {getCartCount()}
+                    </span>
+                  )}
                 </button>
 
                 <button className="p-2 text-gray-300 hover:text-white transition-colors">
@@ -288,6 +299,9 @@ export default function Header() {
           </div>
         </div>
       )}
+
+      {/* Cart Sidebar */}
+      <CartSidebar isOpen={cartOpen} onClose={() => setCartOpen(false)} />
     </>
   );
 }

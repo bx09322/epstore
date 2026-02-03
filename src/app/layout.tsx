@@ -12,7 +12,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Safe Market - Gaming Software Solutions",
+  title: "Eps Market - Cs2",
   description:
     "Discover top-quality gaming software solutions at Safe Market. Elevate your gaming experience with our secure, premium products.",
 };

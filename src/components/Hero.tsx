@@ -10,18 +10,18 @@ export default function Hero() {
           {/* Text Content */}
           <div className="space-y-6">
             <p className="text-blue-400 text-sm font-medium tracking-wide">
-              Welcome to Safe Market !
+              Welcome to EPS Market !
             </p>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
               Right choice for those{" "}
               <span className="text-blue-400">who love to win!</span>
             </h1>
             <p className="text-gray-400 text-lg max-w-lg">
-              Safe Market is a reseller of premium software solutions for gaming lovers.
+              Eps Market is a reseller of premium software solutions for gaming lovers.
               Focusing on PC Games we offer premium products with great support and service.
             </p>
             <Link
-              href="#shop"
+              href="/shop"
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-lg transition-all hover:scale-105"
             >
               Shop Now

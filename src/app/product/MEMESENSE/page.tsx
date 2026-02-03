@@ -65,7 +65,7 @@ export default function MemeSenseProduct() {
           {/* Logo */}
           <div className="flex items-center gap-8">
             <h1 className="text-2xl font-bold">
-              <span className="text-blue-500">Soft</span>
+              <span className="text-blue-500">EPS</span>
               <span className="text-white">Market</span>
             </h1>
 

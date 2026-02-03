@@ -9,8 +9,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "GearZone - Premium Gaming Peripherals",
-  description: "Discover top-tier gaming peripherals. Keyboards, mice, headsets and more. Elevate your gaming experience with premium gear.",
+  title: "EPS - CheatsCs2",
 };
 
 export default function RootLayout({
