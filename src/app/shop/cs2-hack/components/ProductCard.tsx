@@ -13,7 +13,6 @@ interface ProductCardProps {
   image: string;
   price: number;
   originalPrice?: number;
-  priceRange?: { max: number };
   badge?: "sale" | "out-of-stock" | "new" | "hot";
   gradientFrom?: string;
   gradientTo?: string;
@@ -35,7 +34,6 @@ export default function ProductCard({
   image,
   price,
   originalPrice,
-  priceRange,
   badge,
   gradientFrom = "from-blue-900/80",
   gradientTo = "to-slate-900/90",
@@ -47,7 +45,7 @@ export default function ProductCard({
   const [showAdded, setShowAdded] = useState(false);
 
   const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevenir navegación
+    e.preventDefault();
     e.stopPropagation();
     
     if (isOutOfStock) return;
@@ -61,7 +59,6 @@ export default function ProductCard({
       originalPrice
     });
 
-    // Mostrar mensaje de "Agregado"
     setShowAdded(true);
     setTimeout(() => setShowAdded(false), 2000);
   };
@@ -156,28 +153,20 @@ export default function ProductCard({
             </h3>
 
             <div className="flex items-center gap-2">
-              {priceRange && typeof priceRange.max === "number" ? (
-                <span className="text-muted-foreground">
-                  ${priceRange.max.toFixed(2)}
+              {originalPrice && (
+                <span className="text-muted-foreground line-through text-sm">
+                  ${originalPrice.toFixed(2)}
                 </span>
-              ) : (
-                <>
-                  {originalPrice && (
-                    <span className="text-muted-foreground line-through text-sm">
-                      ${originalPrice.toFixed(2)}
-                    </span>
-                  )}
-                  <span className={isOutOfStock ? "text-muted-foreground" : "text-white"}>
-                    ${price.toFixed(2)}
-                  </span>
-                </>
               )}
+              <span className={isOutOfStock ? "text-muted-foreground" : "text-white"}>
+                ${price.toFixed(2)}
+              </span>
             </div>
           </div>
         </div>
       </Link>
 
-      {/* Add to Cart Button - Aparece al hacer hover */}
+      {/* Add to Cart Button */}
       <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
         <button
           onClick={handleAddToCart}

